@@ -3,8 +3,7 @@ const Contact = require("../models/contact.model");
 // POST /contacts
 const createContact = async (req, res) => {
   try {
-    const { first_name, email, status, last_name, phone_number, company_name } =
-      req.body;
+    const { first_name, email, status, last_name, phone_number, company_name }=req.body;
 
     if (!first_name || !email) {
       return res
@@ -23,7 +22,6 @@ const createContact = async (req, res) => {
         .json({ success: false, message: "Email already exists" });
     }
 
-    
     const contact = new Contact(req.body);
     await contact.save();
 
@@ -35,8 +33,56 @@ const createContact = async (req, res) => {
 
 const getContacts = async (req, res) => {
   try {
-    const contacts = await Contact.find({ is_deleted: false });
-    res.status(200).json({ success: true, data: contacts });
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query;
+
+    // 1. Build Filter
+    const filter = { is_deleted: false };
+    if (status) {
+      filter.status = status;
+    }
+
+    // 2. Add Search rules
+    if (search) {
+      // mongoose $or with regex for case-insensitive search on first_name, last_name, and email
+      filter.$or = [
+        { first_name: { $regex: search, $options: "i" } },
+        { last_name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 3. Add Sort rules
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // 4. Calculate Pagination offsets
+    const skipAmount = (parseInt(page) - 1) * parseInt(limit);
+
+    // 5. Fetch contacts matching queries
+    const contacts = await Contact.find(filter)
+      .sort(sortOptions)
+      .skip(skipAmount)
+      .limit(parseInt(limit));
+
+    const count = await Contact.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      data: contacts,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
