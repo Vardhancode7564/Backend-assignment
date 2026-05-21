@@ -19,6 +19,8 @@ A highly scalable, clean-architecture RESTful API built with Node.js, Express, a
 - **Docker Setup:** Production-ready `Dockerfile` and `docker-compose.yml` for instant deployment.
 - **Integration Tests:** Jest and Supertest suite utilizing an in-memory MongoDB structure.
 - **Database Seeding:** Included `seed.js` script to instantly inject test profiles.
+- **Input Sanitization:** Multi-layer protection using `express-mongo-sanitize` (NoSQL injection), `xss` (XSS attack prevention), and regex escaping (ReDoS protection).
+- **Database Migrations:** Versioned migration scripts using `migrate-mongo` for index creation, rollback support, and schema evolution tracking.
 
 ---
 
@@ -63,6 +65,22 @@ npm start
 ```
 The API will be available at `http://localhost:5000/api/v1/contacts`
 
+### 6. Run Database Migrations
+Apply all migration scripts to set up collection indexes:
+```bash
+npm run migrate:up
+```
+
+Check migration status:
+```bash
+npm run migrate:status
+```
+
+Rollback the last migration:
+```bash
+npm run migrate:down
+```
+
 ---
 
 ## 🧪 Testing
@@ -90,11 +108,12 @@ Once the server is running, open your browser to:
 2. **Native Mongoose Validation:** Opted to use Mongoose's built-in schema validation (Enums, Match regex) rather than external libraries (like Joi). This reduces package bloat while strictly enforcing data rules at the database level.
 3. **Soft Delete Protocol:** Instead of calling `.remove()`, a `findOneAnUpdate` flips an `is_deleted` flag. This preserves analytics and data integrity without breaking GET queries.
 4. **Global Error Middleware:** Instead of repetitive `try/catch` response formatting, all thrown errors are forwarded using `next(error)` to a central handler. This ensures structural parity in output to front-end clients.
+5. **Multi-layer Input Sanitization:** Applied three levels of protection — custom NoSQL injection middleware strips `$` and `.` operator keys from user input, `xss` library sanitizes strings to prevent cross-site scripting, and `escapeRegex` utility prevents ReDoS attacks on search queries. All built to be compatible with Express 5's read-only `req.query`.
+6. **Database Migrations:** Used `migrate-mongo` for versioned, reversible migration scripts. This provides a clear audit trail of schema changes and enables consistent database setup across environments.
 
 ---
 
 ## ⚠️ Known Limitations
-- **Database Migrations:** Mongoose relies on schemas, so explicit Up/Down migration scripts were excluded to maintain project simplicity.
+- No user-based authentication (JWT/Sessions) — API Key auth is used as per assignment scope.
 
----
 

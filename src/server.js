@@ -9,14 +9,18 @@ const connectDB = require("./config/db");
 const contactRoutes = require("./routes/contact.route");
 const errorHandler = require("./middlewares/errorHandler");
 const requireApiKey = require("./middlewares/auth.middleware");
+const sanitizeInput = require("./middlewares/sanitize.middleware");
 const swaggerDocument = require("./swagger.json");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+
+// Input Sanitization — XSS + NoSQL Injection Protection
+app.use(sanitizeInput);
 
 // Request Logging
 app.use(morgan("dev"));

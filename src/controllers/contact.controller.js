@@ -1,4 +1,5 @@
 const Contact = require("../models/contact.model");
+const escapeRegex = require("../utils/escapeRegex");
 
 // POST /contacts
 const createContact = async (req, res, next) => {
@@ -43,6 +44,11 @@ const getContacts = async (req, res, next) => {
       sortOrder = "desc",
     } = req.query;
 
+    // Validate sortBy against allowed fields
+    const allowedSortFields = ["first_name", "last_name", "email", "company_name", "status", "createdAt", "updatedAt"];
+    if (!allowedSortFields.includes(sortBy)) sortBy = "createdAt";
+    if (!['asc', 'desc'].includes(sortOrder)) sortOrder = "desc";
+
     // Validate Pagination values
     page = parseInt(page);
     limit = parseInt(limit);
@@ -58,11 +64,13 @@ const getContacts = async (req, res, next) => {
 
     // 2. Add Search rules
     if (search) {
+      // Escape special regex characters to prevent ReDoS attacks
+      const escapedSearch = escapeRegex(search);
       // mongoose $or with regex for case-insensitive search on first_name, last_name, and email
       filter.$or = [
-        { first_name: { $regex: search, $options: "i" } },
-        { last_name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
+        { first_name: { $regex: escapedSearch, $options: "i" } },
+        { last_name: { $regex: escapedSearch, $options: "i" } },
+        { email: { $regex: escapedSearch, $options: "i" } },
       ];
     }
 
