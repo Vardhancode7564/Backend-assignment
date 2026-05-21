@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    container_name: contact_management_api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb+srv://harsha:vardhan@contactapi.4a9nwzk.mongodb.net/?appName=contactApi
+      - API_KEY=3219e93c57faf8396599e37bce43acbac7c9c670b9cccdd16d14c5d9304d6a62
+    depends_on:
+      - mongo
+    networks:
+      - contact-network
+
+  mongo:
+    image: mongo:6
+    container_name: contact_management_db
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - contact-network
+
+networks:
+  contact-network:
+    driver: bridge
+
+volumes:
+  mongo_data:

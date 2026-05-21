@@ -3,10 +3,13 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
+const swaggerUi = require("swagger-ui-express");
 
 const connectDB = require("./config/db");
 const contactRoutes = require("./routes/contact.route");
 const errorHandler = require("./middlewares/errorHandler");
+const requireApiKey = require("./middlewares/auth.middleware");
+const swaggerDocument = require("./swagger.json");
 
 const app = express();
 const PORT = 5000;
@@ -17,6 +20,9 @@ app.use(cors());
 
 // Request Logging
 app.use(morgan("dev"));
+
+// Swagger Documentation Route (Public)
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rate Limiting (Limit to 100 requests per 15 mins)
 const limiter = rateLimit({
@@ -29,6 +35,8 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
+// Protect API with API Key (except docs)
+app.use("/api/v1/", requireApiKey);
 app.use("/api/v1/contacts", contactRoutes);
 
 // Throw 404 for unknown routes
@@ -41,8 +49,13 @@ app.use((req, res, next) => {
 // Universal Error Handling Middleware
 app.use(errorHandler);
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server is running at port: ${PORT}`);
+// Only listen if not running via Supertest
+if (require.main === module) {
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running at port: ${PORT}`);
+    });
   });
-});
+}
+
+module.exports = app;
