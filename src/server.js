@@ -28,6 +28,19 @@ app.use(morgan("dev"));
 // Swagger Documentation Route (Public)
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Root Health Check Route (Simple - Public)
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Welcome to Contact Management API",
+    version: "1.0.0",
+    status: "running",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || "development",
+  });
+});
+
 // Rate Limiting (Limit to 100 requests per 15 mins)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
